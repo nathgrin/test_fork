@@ -1,0 +1,681 @@
+%%%%% %%%%% %%%%% Identification
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{examstylo}[2022/10/10 Exam Style]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% %%%%% %%%%% Preliminary declarations. 
+% Use Packages
+%
+% Tools for programming
+\RequirePackage{etoolbox}
+% Tools for images and Fig.~manipulating
+\RequirePackage[pdftex]{graphicx}
+% for \FloatBarrier, also redefines \section to be a floatbarrier
+\RequirePackage[section]{placeins}
+% Bibtex plugin for nice citations
+%\RequirePackage[round]{natbib}
+% for subfigures
+%\RequirePackage{caption}
+%\RequirePackage{subcaption}
+% MultiRows intables
+%\RequirePackage{multirow}
+% needed for including eps files
+%\RequirePackage{epstopdf}
+% Absolute positioning \textbox{width}[anchorx,anchory~optional](posx,posy) width,posx&posy from 0 to 1000; = n * pagewidth / 1000; as set by \TPGRID
+%\RequirePackage[absolute,overlay]{textpos} 
+%\RequirePackage[absolute,overlay,showboxes]{textpos} % Absolute positioning with boxes
+%\TPGrid{1000}{1000} % Set up grid for package textpos, how many fractions of \pagewidth/length
+% Rotate
+\RequirePackage{rotating}
+\RequirePackage{hyperref}
+\RequirePackage{nameref}
+\RequirePackage[dutch]{babel}
+\RequirePackage{keyval}
+
+\RequirePackage{tcolorbox}
+\RequirePackage{enumitem}
+
+\RequirePackage{wrapfig}
+
+\RequirePackage{fancyhdr}
+\RequirePackage{changepage}
+
+% some symbol stuff
+\RequirePackage{amsmath} % Somehow this causes the equation reference to break ..
+\RequirePackage{amsfonts} %% <- also included by amssymb
+\RequirePackage{amssymb}
+\RequirePackage{bm}
+\RequirePackage{eurosym}
+%\RequirePackage{cancel}
+
+\RequirePackage{icomma} % comma decimal point
+
+% for the subquestion (paracol) and two column layout (multicol)
+\RequirePackage{multicol}
+\RequirePackage{paracol}
+
+
+\RequirePackage{marginnote}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% %%%%% %%%%% Options. 
+
+%\DeclareOption{showpoints}{\def\showpoints}
+
+% if option undefined
+\DeclareOption*{\PackageWarning{examstylo}{Unknown option ‘\CurrentOption’}}
+
+%%% Process
+\ProcessOptions\relax
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% %%%%% %%%%% More declarations
+
+%%% Page Layout
+\reversemarginpar % Margin is the left side
+
+\RequirePackage{geometry}
+
+\newcommand{\setmainpagegeometry}{
+\newgeometry{
+% a4paper,
+ scale=1,
+ textwidth=15.3cm,
+ textheight=24.6cm,
+ % total={15.3cm,24.6cm}, % the fuck does this mean
+ left=3.7cm, % hoffset
+ marginparwidth=1.1cm,
+ marginparsep=0.6cm, %0.55 or 0.65
+ top=1.7cm,
+ footskip=1.2cm
+ }
+}
+\newcommand{\setnomargingeometry}{
+% New geometry: get rid of the margin 
+% For title and for worksheet pages
+\newgeometry{
+% a4paper,
+ scale=1,
+ textwidth=17.0cm,
+ textheight=24.6cm,
+ left=2cm, % hoffset
+ marginparwidth=0cm,
+ marginparsep=0cm, 
+ top=1.7cm,
+ footskip=1.2cm
+ }
+%\fancyheadoffset[lh]{0pt} % Use this to recalculate the fancyfoot numbers/offsets after the geometry change
+}
+
+\newcommand{\resettooldgeometry}{
+\restoregeometry
+%\fancyheadoffset[lh]{0pt} % Use this to recalculate the fancyfoot numbers/offsets after the geometry change
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%
+% Some options
+\def\istrue{True}
+
+\newif\ifusepointsquestions
+\newif\ifusepointssubquestions
+\newcommand{\UsePointsFromQuestions}{\usepointsquestionstrue}
+\newcommand{\UsePointsFromSubQuestions}{\usepointssubquestionstrue}
+
+\newif\ifmakeworksheetpages
+\newcommand{\MakeTheWorksheetPages}{\makeworksheetpagestrue}
+
+\newif\ifmakefulltitlepage
+\newif\ifmakesimpletitlepage
+\newcommand{\MakeTheFullTitlePage}{\makefulltitlepagetrue}
+\newcommand{\MakeTheSimpleTitlePage}{\makesimpletitlepagetrue}
+
+\newif\ifmaketheformulapage
+\newcommand{\MakeTheFormulaPage}{\maketheformulapagetrue}
+
+\newcommand{\UseArialFont}{
+\usepackage{helvet}% Secretly this is Helvetica
+\renewcommand{\familydefault}{\sfdefault}
+\linespread{1.2} % spacing between lines (better 1.2 for Arial)
+}
+
+\def\tmpfunc#1{#1}
+
+%% Footer options
+\newif\ifOptFoot@showleft
+\newif\ifOptFoot@showcenter
+\newif\ifOptFoot@showright
+
+\define@key{footeropt}{showleft}{\def\tmp{#1}\ifx\tmp\istrue\OptFoot@showlefttrue\else\OptFoot@showleftfalse\fi}
+\define@key{footeropt}{showcenter}{\def\tmp{#1}\ifx\tmp\istrue\OptFoot@showcentertrue\else\OptFoot@showcenterfalse\fi}
+\define@key{footeropt}{showright}{\def\tmp{#1}\ifx\tmp\istrue\OptFoot@showrighttrue\else\OptFoot@showrightfalse\fi}
+\setkeys{footeropt}{showleft=True,showcenter=True,showright=True}% defaults
+\newcommand{\SetFooterOptions}[2][]{%
+  \setkeys{footeropt}{#1}% Set new keys
+}
+%% Exercise options
+\newif\ifOptExc@excnewpage
+\newif\ifOptExc@firstexconnewpage
+\newlength{\firstexercisevskip}\setlength{\firstexercisevskip}{1\baselineskip}
+
+\define@key{excopt}{PutExerciseOnNewPage}{\def\tmp{#1}\ifx\tmp\istrue\OptExc@excnewpagetrue\else\OptExc@excnewpagefalse\fi}
+\define@key{excopt}{PutFirstExerciseOnNewPage}{\def\tmp{#1}\ifx\tmp\istrue\OptExc@firstexconnewpagetrue\else\OptExc@firstexconnewpagefalse\fi}
+\define@key{excopt}{firstexercisevskip}{\setlength{\firstexercisevskip}{#1}}
+\setkeys{excopt}{PutExerciseOnNewPage=True,PutFirstExerciseOnNewPage=True,firstexercisevskip=\baselineskip}% defaults
+\newcommand{\SetExerciseOptions}[2][]{%
+  \setkeys{excopt}{#1}% Set new keys
+}
+%% Worksheet options
+\newif\ifOptWorksh@showtitle
+
+\define@key{wsopt}{ShowTitle}{\def\tmp{#1}\ifx\tmp\istrue\OptWorksh@showtitletrue\else\OptWorksh@showtitlefalse\fi}
+\setkeys{wsopt}{ShowTitle=True}% defaults
+\newcommand{\SetWorksheetOptions}[2][]{%
+  \setkeys{wsopt}{#1}% Set new keys
+}
+%% Simple titlepage options
+\def\OptSimpTit@thestyle{Default}
+
+\define@key{sitiopt}{thestyle}{\def\OptSimpTit@thestyle{#1}}
+\setkeys{sitiopt}{thestyle=Default}% defaults
+\newcommand{\SetSimpleTitleOptions}[2][]{%
+  \setkeys{sitiopt}{#1}% Set new keys
+}
+
+
+%%%%% Layout and formatting
+
+%%%% custom commands for typeset
+\newcommand{\mrm}[1]{ \ensuremath{\mathrm{ #1}} } % MRM
+\def\thus{\ensuremath{\Rightarrow}} % 
+\DeclareMathSymbol{\sm}{\mathbin}{AMSa}{"39}
+\def\meuro{\ensuremath{\text{\euro}}}
+\def\deg{\ensuremath{^{\circ}} }
+\newcommand{\mli}[1]{\mathit{#1}} % multiletter identifier
+\newcommand\cldots{\makebox[1em][c]{.\hfil.\hfil.}} % compact ldots
+\def\oldots{\ensuremath{\orange{\cldots}}} % orange cldots (Kern-like)
+\newcommand{\rom}[1]{\MakeUppercase{\romannumeral #1}} % ROman numeral
+\def\intextbullet{\textbullet\ }
+\NewDocumentCommand{\lognl}{o}{%
+  \IfNoValueTF{#1}{}{{}^{\scalebox{0.5}{#1}}\!}\log}%
+\def\deriv#1#2{\ensuremath{\frac{\mrm{d}#1}{\mrm{d}#2}}}
+
+
+\renewcommand\comment[1]{} % COMMENTS
+
+
+% Colors
+\RequirePackage{xcolor}
+\newcommand{\red}[1]{{\color{red} #1}}
+\newcommand{\blue}[1]{{\color{blue} #1}}
+\newcommand{\orange}[1]{{\color{orange} #1}}
+\definecolor{excrulegray}{gray}{0.75} 
+\newcommand{\excrulecolor}[1]{{\color{excrulegray} #1}}
+
+
+
+%%%%
+%\RequirePackage{parskip} % no indents for paragraph 
+%\parindent=0pt\relax
+\setlength{\parindent}{0em}
+\setlength{\parskip}{0pt}
+
+\def\arraystretch{1.5}%  1 is the default, change whatever you need % Table row sep
+
+
+% Question format
+\newcommand{\exc}[1]{\textbf{#1}}
+\newcommand{\pts}[1]{{\footnotesize #1p}}
+
+% subquestions
+%\def\subqmarginwidth{\ifusepointssubquestions2.5em\else1.25em\fi} % subquestion margin
+%\setlength{\columnsep}{0.5em} % for paracol as well as multicol package..
+
+% Fix lineheight thing (is fake)
+\newlength{\lineheight} % lineheight as a fix for some random newline when doing twocolumn subquestions
+\def\comparison{12}%pt
+\ifx\f@size\comparison
+  \setlength{\lineheight}{\baselineskip}
+\else
+  \setlength{\lineheight}{0.833333\baselineskip}
+\fi
+
+
+%% private Layout functions
+\newcommand{\ExSt@maketitlebar}[1]{
+\begin{tcolorbox}[ boxrule=0mm, boxsep=0pt,left=0.7cm, right=0.7cm,top=5pt,bottom=5pt,colback=black, colframe=black, arc=0pt, outer arc=0pt ]% Title
+\begin{Large}\textbf{{\color{white} #1}}\end{Large}%
+\end{tcolorbox}%
+}
+
+
+%%%%% Page Style
+\def\footerzoztxt{Lees verder \raisebox{0.75pt}{\scalebox{0.9}{$\blacktriangleright\blacktriangleright\blacktriangleright$}}}
+\def\footerendtxt{Einde \scalebox{0.8}{$\blacksquare$}}
+
+\newcommand\footerlefttxt[1][]{%
+\ifOptFoot@showleft
+\def\tmp{#1}%
+\ifx\tmp\empty
+  \theleftfoottext%
+\else
+  \theleftfoottext%
+\fi
+\fi
+}
+\newcommand\footercentertxt[1][]{%
+\ifOptFoot@showcenter
+\thepage%
+\def\tmp{#1}%
+\ifx\tmp\empty
+  \@ifundefined{r@page:lastpage}{%
+  }{\enspace/\enspace\pageref{page:lastpage}}
+\else
+  \@ifundefined{r@page:lastpageworksheet}{%
+  }{\enspace/\enspace\pageref{page:lastpageworksheet}}
+\fi
+\fi
+}
+\newcommand\footerrighttxt[1][]{%
+\ifOptFoot@showright
+\def\tmp{#1}%
+\ifx\tmp\empty
+  \footerzoztxt%
+\else
+  \footerendtxt%
+\fi
+\fi
+}
+
+%%% Main pages 
+\fancypagestyle{mainpagestyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{\footerlefttxt}
+\fancyfoot[C]{\footercentertxt}
+\fancyfoot[R]{\footerrighttxt}
+}
+ % Style on last page
+\fancypagestyle{lastpagesyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{\footerlefttxt}
+\fancyfoot[C]{\footercentertxt}
+\fancyfoot[R]{\footerrighttxt[last]}
+}
+
+%%% Worksheet
+\fancypagestyle{worksheetpagestyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{\footerlefttxt}
+\fancyfoot[C]{\footercentertxt[ws]}
+\fancyfoot[R]{\footerrighttxt}
+}
+ % Style on last page of worksheet
+\fancypagestyle{worksheetlastpagestyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{\footerlefttxt}
+\fancyfoot[C]{\footercentertxt[ws]}
+\fancyfoot[R]{\footerrighttxt[last]}
+}
+
+%%% Title page
+\fancypagestyle{titlepagestyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{}
+\fancyfoot[C]{}
+\fancyfoot[R]{}
+}
+%%% formula page(s)
+\fancypagestyle{formulapagestyle}{
+\fancyhead{} % no header..
+\renewcommand{\headrulewidth}{0pt} % fuck off with the hdr
+\fancyfoot{}
+\fancyfoot[L]{\footerlefttxt}
+\fancyfoot[C]{\footercentertxt}
+\fancyfoot[R]{\footerrighttxt}
+}
+
+% THIS complements the wrapfig package
+%% Adds empty text lines next to the wrapfigure, if the paragraph is shorter than needed.
+\def\WFfill{\par 
+    \ifx\parshape\WF@fudgeparshape 
+    \nobreak 
+    \ifnum\c@WF@wrappedlines>\@ne 
+    \advance\c@WF@wrappedlines\m@ne 
+    \vskip\c@WF@wrappedlines\baselineskip 
+    \global\c@WF@wrappedlines\z@ 
+    \fi 
+    \allowbreak 
+    \WF@finale 
+    \fi 
+} 
+
+
+%%% Lists
+\setitemize{noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=7mm,labelsep=4mm} %from the enumitem package
+% Labels for items in (nested) enumerate (uses counters)
+%\newcommand\labelenumi{\theenumi.}% Default is arabic: 1.
+%\newcommand\labelenumii{(\theenumii)}% Default is alph: (a)
+%\newcommand\labelenumiii{\theenumiii.}% Default is roman: i.
+%\newcommand\labelenumiv{\theenumiv.}% Default is Alph: A.
+% Labels for items in (nested) itemize (uses bullets/characters)
+\renewcommand\labelitemii{\textbullet}% bullet
+\renewcommand\labelitemi{\normalfont\bfseries \textendash}% --
+%\newcommand\labelitemiii{\textasteriskcentered}% *
+%\newcommand\labelitemiv{\textperiodcentered}% .
+
+
+% Circle the excersize (not needed in this)
+%\RequirePackage{tikz}
+%\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+%            \node[shape=circle,draw,inner sep=2pt] (char) {#1};}}
+
+
+
+
+%%% Exercise counters
+% Raw
+\newcounter{exercise}
+\newcounter{question}
+\newcounter{subquestion}[question]
+\renewcommand{\thesubquestion}{\alph{subquestion}}
+
+% Total counters
+\newcounter{totexercises}
+\newcounter{totquestions}
+\newcounter{totpoints}
+
+\providecommand\totexcs{} 
+\providecommand\totqstns{} 
+\providecommand\totpts{}
+
+\AtEndDocument{%
+  \addtocounter{totquestions}{\value{question}}%
+  \addtocounter{totexercises}{\value{exercise}}%
+  %\addtocounter{totpoints}{\value{?}}%
+  \immediate\write\@mainaux{%
+    \string\gdef\string\totexcs{\number\value{totexercises}}%
+    \string\gdef\string\totqstns{\number\value{totquestions}}%
+    \string\gdef\string\totpts{\number\value{totpoints}}%
+  }%
+}
+
+
+% New exercise/question commands
+\newcommand{\newexercise}[1]{
+\refstepcounter{exercise}
+\NR@gettitle{#1}% for the nameref package, to be able to refer to the exc title
+\WFfill\WFclear\FloatBarrier
+%\ifdefined\OptExc@excnewpage\newpage\else\vspace{3\baselineskip}\fi % new page if wanted
+\ifnum\ifnum\value{exercise}=1 \ifOptExc@firstexconnewpage 1\else 0\fi \else\ifOptExc@excnewpage 1\else 0\fi\fi
+   =1 %
+   \newpage
+ \else
+   \vspace{\firstexercisevskip}
+ \fi
+\hspace*{\dimexpr-0.5cm-1em\relax}{\large\bf #1 }\vspace{-0.5\baselineskip}
+\newline \hspace*{-1.7cm}\excrulecolor{\rule{\dimexpr\textwidth+1.7cm\relax}{1.5mm}}
+\newline
+%\exc{\circled{\theexercise}} << old style
+} 
+
+\newcommand{\newquestion}[2][]{% Those convoluted ifstatements are: IF (pionts at subquestion and  asked for exception: DO) or (point ant question: DO)
+\refstepcounter{question}
+\ifusepointssubquestions\ifdoshowpoints\addtocounter{totpoints}{#1}\fi\else\ifusepointsquestions\addtocounter{totpoints}{#1}\fi\fi% Add points if asked
+\marginnote{\ifstrempty{#1}{}{\ifusepointssubquestions\ifdoshowpoints\pts{#1}\fi\else\ifusepointsquestions\pts{#1}\fi\fi}\hfill\exc{\thequestion}}[0cm]#2%
+\ifdoshowpoints\showpoints\fi%retoggle the toggle
+}
+
+%\def\subqmarginwidth{\ifusepointssubquestions2.5em\else1.25em\fi} % subquestion margin
+\def\subqmarginwidth{\ifusepointssubquestions2.25em\else1em\fi} % subquestion margin
+\setlength{\columnsep}{0.5em} % for paracol as well as multicol package..
+
+\newcommand{\newsubquestion}[2][]{%
+\setcolumnwidth{\subqmarginwidth,\fill}%,\dimexpr\textwidth-\subqmarginwidth\relax}[0,0]%\columnratio{0.08}%
+\refstepcounter{subquestion}
+\ifusepointssubquestions\addtocounter{totpoints}{#1}\fi
+\begin{paracol}{2}
+%\ifstrempty{#1}{}{\ifusepointssubquestions\pts{#1}~\hfill\fi}\exc{\thesubquestion}%
+\parbox[t]{\dimexpr\subqmarginwidth\relax}{%
+\ifstrempty{#1}{}{\ifusepointssubquestions\pts{#1}~\hfill\fi}\exc{\thesubquestion}}%
+\switchcolumn%
+#2%
+\end{paracol}%
+}
+
+\newif\ifdoshowpoints
+\newcommand{\showpoints}{%Toggle the boolean
+\ifdoshowpoints
+\doshowpointsfalse
+\else
+\doshowpointstrue
+\fi
+}
+
+
+\newcommand{\insertemptypage}{
+\newpage
+\ \vfill
+\textbf{Ga verder op de volgende pagina.}
+\vfill
+\newpage
+}
+
+\newcommand{\refquestion}[1]{ % Mainly for worksheets, reference to a question
+%\newline
+\exc{\ref{#1}}
+%\newline
+}
+
+% call this at the START of the document
+\AtBeginDocument{% Declarations at the start of the document
+\setcounter{exercise}{0} % Reset exercise counter
+\setnomargingeometry % first set to no margin geometry
+\pagestyle{mainpagestyle} % Apply the style, to calculate the footer width, then later we will set to the mainpage geometry, and never touch the footer width again. (its a hack)
+\ifOptExc@firstexconnewpage \else % if not
+  \setmainpagegeometry
+\fi
+}
+
+% call this at the LAST page!
+\newcommand{\lastpageofthetest}{
+\vfill
+\ifx\thenoteforthelastpage\empty
+%  <EMPTY>%
+\else
+  \hrule\vspace{0.5\baselineskip}
+  {\footnotesize \thenoteforthelastpage}
+\fi
+\label{page:lastpage}
+\pagestyle{lastpagesyle}
+}
+
+
+
+% Worksheet!
+\newcommand{\worksheetcontent}[1]{\gdef\theworksheetcontent{#1}}
+\newcommand{\makeworksheets}{
+\newpage
+\setcounter{page}{1}
+\pagestyle{worksheetpagestyle}
+
+\setnomargingeometry % Set new geometry
+
+
+% Header
+\ifOptWorksh@showtitle%
+  \ExSt@maketitlebar{\thetitle\hfill\theextratitletext}%titlebar
+\fi
+\begin{tcolorbox}[ % Uitwerkbijlage
+                  boxrule=0.5mm, boxsep=0pt,
+                  left=0.7cm, right=0pt,top=5pt,bottom=5pt,
+                  colback=white, colframe=excrulegray,
+                  arc=0pt, outer arc=0pt,
+                  ]%%
+  \begin{large}\textbf{ Uitwerkbijlage }\end{large}
+\end{tcolorbox} \vspace{1\baselineskip}
+\begin{large} Naam: \dotfill \ifbool{false}{Kandidaat nummer: \dotfill}{} \end{large} \vspace{1\baselineskip}
+
+% Content
+\theworksheetcontent
+%
+
+
+\vfill
+\begin{center} \textbf{\textsc{VERGEET NIET DEZE UITWERKBIJLAGE IN TE LEVEREN}} \end{center}
+\label{page:lastpageworksheet}
+\pagestyle{worksheetlastpagestyle}
+}
+
+% FIGURE
+\newcommand{\makefigure}[3]{ % kwargs,figname, caption
+\refstepcounter{figure}
+\textbf{Figuur~\thefigure}\ifstrempty{#3}{}{:} #3\newline
+\includegraphics[#1]{#2} \newline
+}
+
+% Equation aligns etc % couldnt make it work
+%\makeatletter
+%\newcommand{\mathleft}{\@fleqntrue\@mathmargin7.3mm} % This makes eqn referencing fail
+%\mathleft
+%\makeatother 
+
+
+\def\title#1{\gdef\thetitle{#1}}
+\def\leftfoottext#1{\gdef\theleftfoottext{#1}}
+\def\noteforthelastpage#1{\gdef\thenoteforthelastpage{#1}}
+\def\date#1{\gdef\thedate{#1}}
+\def\time#1{\gdef\thetime{#1}}
+\def\extratitletext#1{\gdef\theextratitletext{#1}}
+\newcommand{\titlepagetext}[1]{\gdef\thetitlepagetext{#1}}
+
+\title{}
+\leftfoottext{}
+\noteforthelastpage{}
+\date{}
+\time{}
+\extratitletext{}
+\titlepagetext{}
+
+
+\newcommand{\maketitlepage}{
+
+\pagestyle{titlepagestyle} % Apply the style
+
+\ \vspace{2\baselineskip}
+\begin{flushright}
+%\includegraphics[width=3cm]{barlaeus_logo_almostsquare.png}
+\begin{Huge}\textbf{\textsc{Barlaeus\\[2pt]Gymnasium}}\end{Huge}\vspace{\baselineskip}
+
+\ifx\thedate\empty%
+  \ifx\thetime\empty%
+  \else%
+    \thetime\vspace{\baselineskip}%
+  \fi%
+\else%
+  \ifx\thetime\empty%
+    \thedate\vspace{\baselineskip}%
+  \else%
+    \thedate\\\thetime\vspace{\baselineskip}%
+  \fi%
+\fi%
+\end{flushright}%
+\ExSt@maketitlebar{\hfill\thetitle}%
+\begin{flushright}\theextratitletext\end{flushright}
+
+\ \vspace{4\baselineskip}
+
+\thetitlepagetext
+
+\newpage
+
+} % end maketitlepage definition
+
+
+\newcommand{\simpletitle@thedatetime}{
+\ifx\thedate\empty%
+  \ifx\thetime\empty%
+  \else%
+    \thetime%
+  \fi%
+\else%
+  \ifx\thetime\empty%
+    \thedate%
+  \else%
+    \thedate, \thetime%
+  \fi
+\fi%
+}
+
+\newcommand{\simpletitletext}[1]{\gdef\thesimpletitletext{#1}}
+
+\newcommand{\simpletitlepage@DefaultStyle}{
+\ifOptExc@firstexconnewpage \else% if not
+\begin{adjustwidth}{-1.7cm}{} % Change width just for this part
+\fi
+
+\simpletitle@thedatetime
+\hfill
+%\includegraphics[]{barlaeus_logo_almostsquare.png}
+\begin{Large}\textbf{\textsc{Barlaeus Gymnasium}}\end{Large}\vspace{-0.5\baselineskip}
+\ExSt@maketitlebar{\thetitle \hfill \theextratitletext}
+
+
+\thesimpletitletext
+
+\ifOptExc@firstexconnewpage \else
+\end{adjustwidth}
+\fi
+}
+\newcommand{\simpletitlepage@ExerciselikeStyle}{
+\ifOptExc@firstexconnewpage \else% if not
+\begin{adjustwidth}{-1.7cm}{} % Change width just for this part
+\fi
+
+\simpletitle@thedatetime
+\hfill
+\newline
+{\large\bf \thetitle} \hfill \theextratitletext\vspace{-0.5\baselineskip}
+\newline\excrulecolor{\rule{\linewidth}{1.5mm}}%\includegraphics[]{barlaeus_logo_almostsquare.png}
+
+\thesimpletitletext
+
+\ifOptExc@firstexconnewpage \else
+\end{adjustwidth}
+\fi
+}
+
+\newcommand{\makesimpletitleonfirstpage}{
+
+\def\tmpstring@default{Default}
+\def\tmpstring@Exerciselike{Exerciselike}
+\ifx\OptSimpTit@thestyle\tmpstring@Exerciselike
+    \simpletitlepage@ExerciselikeStyle
+  \else
+    \simpletitlepage@DefaultStyle
+\fi
+
+} % end maketitlepage definition
+
+
+\newcommand{\formulapagetext}[1]{\gdef\theformulapagetext{#1}}
+\newcommand{\makeformulapage}{
+
+\textsc{Overzicht formules}\vspace{2\baselineskip}
+
+\theformulapagetext
+%\newpage
+} % end makeformulapage definition
