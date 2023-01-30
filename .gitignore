@@ -1,4 +1,5 @@
 # Python virtualenvironment
 .venv/
 
-
+# Default build target
+build/
