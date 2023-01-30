@@ -1,5 +1,8 @@
 # Python virtualenvironment
 .venv/
 
-# Default build target
+# Default package build target
+dist/
+
+# Default test build target
 build/
