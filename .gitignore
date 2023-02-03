@@ -6,3 +6,6 @@ dist/
 
 # Default test build target
 build/
+
+# CPython
+__pycache__
