@@ -49,6 +49,8 @@ Python to LaTeX test generator.
         - `{ lower_bound: float, upper_bound: float }` `->` `NUMERICAL`
         - `{ options: [str] }` `->` `CHOICE`
         - `{ options: [[str]] }` `->` `SINGLE_CHOICE`
+          - `{ require_unique: False }`: Remember choice history, do not repeat until reset
+      - `current_value`
       - `seed`
       - contains:
         - `type`:
@@ -59,15 +61,18 @@ Python to LaTeX test generator.
       - implements:
         - `__iter__()`: returns this object
         - `__next__()`: returns next formatted string including value
+        - `render_latex()`: return latex render with current value
         - `set_seed()`: Provide a seed value for the randomness
         - `get_value()`: returns the unformatted value of the current choice/numerical value
-        - `get_numerical()`: get a next numerical value (based on seed)
-        - `get_choice()`: get next choice (based on seed)
+        - `generate_numerical_value()`: get a next numerical value (based on seed)
+        - `generate_choice()`: get next choice (based on seed)
+        - `reset(keep_seed=True)`: remove history (but keep seed)
 
 
 
 # ExamStylo
 Latex style to reproduce the Dutch central exam format.
+Note: Make compatible with exam-documentclass `newquestion` -> `question`, implement subquestions as `part`s.
 
 ## Features / TODO
  - [ ] Seperate ExamStylo from testgeneration a seperate module, include this either as a submodule (during development) or as a LaTeX package (when published to CTAN)
